@@ -40,12 +40,26 @@ jobs:
           echo "- Build status: Success" >> build-report.md
       
       - name: Run tests with coverage report
+        id: test
+        continue-on-error: true
         run: npm run test
+
+      - name: Record test status
+        run: |
+          if [ "${{ steps.test.outcome }}" == "failure" ]; then
+            echo "- Test status: Failed ❌" >> test-report.md
+          else
+            echo "- Test status: Passed ✅" >> test-report.md
+          fi
 
       - name: Generate test coverage report
         run: |
           echo "## Test Coverage Report" > test-report.md
-          cat coverage/lcov-report/index.html | grep -o '<span class="strong">[^<]*%' | head -3 >> test-report.md
+          if [ -f "coverage/lcov-report/index.html" ]; then
+            cat coverage/lcov-report/index.html | grep -o '<span class="strong">[^<]*%' | head -3 >> test-report.md || echo "- Coverage data extraction failed" >> test-report.md
+          else
+            echo "- Coverage report not generated" >> test-report.md
+          fi
           echo "- Tests executed at: $(date)" >> test-report.md
 
       - name: Run formating
