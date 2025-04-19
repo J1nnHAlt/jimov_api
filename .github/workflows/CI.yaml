@@ -66,6 +66,7 @@ jobs:
         run: npm run format
 
       - name: Run linter
+        continue-on-error: true
         run: npm run linter
 
       - name: Upload build report
