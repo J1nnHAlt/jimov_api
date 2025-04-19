@@ -1,12 +1,13 @@
 name: CI
 
 
-on: 
+on:
   push:
     branches:
       - main
-      - dev
-
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
@@ -16,20 +17,34 @@ jobs:
       - name: Set up git
         uses: actions/checkout@v3
 
-      - name: Set up node
+      - name: Set up Node.js
         uses: actions/setup-node@v3
 
-      - name: Set up dependencys
+      - name: Install dependencies
         run: npm i 
 
       - name: Install typescript
         run: npm i typescript
 
-      - name: Set up the project
+      - name: Build Project
         run: npm run build
+
+      - name: Generate build report
+        run: |
+          echo "## Build Report" > build-report.md
+          echo "- Build timestamp: $(date)" >> build-report.md
+          echo "- Node version: $(node -v)" >> build-report.md
+          echo "- NPM version: $(npm -v)" >> build-report.md
+          echo "- Build status: Success" >> build-report.md
       
-      - name: Run tests
+      - name: Run tests with coverage report
         run: npm run test
+
+      - name: Generate test coverage report
+        run: |
+          echo "## Test Coverage Report" > test-report.md
+          cat coverage/lcov-report/index.html | grep -o '<span class="strong">[^<]*%' | head -3 >> test-report.md
+          echo "- Tests executed at: $(date)" >> test-report.md
 
       - name: Run formating
         run: npm run format
@@ -37,11 +52,16 @@ jobs:
       - name: Run linter
         run: npm run linter
 
-      - name: Run tests
-        run: npm run test
+      - name: Upload build report
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-report
+          path: build-report.md
 
-      - name: Run format
-        run: npm run format
-
-      - name: Run linter
-        run: npm run lint
+      - name: Upload test coverage
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-coverage
+          path: |
+            coverage/
+            test-report.md
