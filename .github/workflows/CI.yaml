@@ -27,10 +27,7 @@ jobs:
           cache: 'yarn'
 
       - name: Install dependencies
-        run: yarn i 
-
-      - name: Install typescript
-        run: yarn i typescript
+        run: yarn install
 
       - name: Measure start time
         id: build-start
