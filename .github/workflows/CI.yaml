@@ -24,20 +24,20 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          cache: 'npm'
+          cache: 'yarn'
 
       - name: Install dependencies
-        run: npm i 
+        run: yarn i 
 
       - name: Install typescript
-        run: npm i typescript
+        run: yarn i typescript
 
       - name: Measure start time
         id: build-start
         run: echo "build_start=$(date +%s)" >> $GITHUB_ENV
 
       - name: Build Project
-        run: npm run build
+        run: yarn run build
 
       - name: Measure end time
         run: |
@@ -50,7 +50,7 @@ jobs:
           echo "## Build Report" > build-report.md
           echo "- Build timestamp: $(date)" >> build-report.md
           echo "- Node version: $(node -v)" >> build-report.md
-          echo "- NPM version: $(npm -v)" >> build-report.md
+          echo "- yarn version: $(yarn -v)" >> build-report.md
           echo "- Build status: Success" >> build-report.md
           echo "- Build duration: ${{ env.build_duration }} seconds" >> build-report.md
           echo "- OS: $(uname -a)" >> build-report.md
@@ -81,7 +81,7 @@ jobs:
       - name: Run tests with coverage report
         id: test
         continue-on-error: true
-        run: npm run test
+        run: yarn run test
 
       - name: Record test status
         run: |
@@ -102,11 +102,11 @@ jobs:
           echo "- Tests executed at: $(date)" >> test-report.md
 
       - name: Run formating
-        run: npm run format
+        run: yarn run format
 
       - name: Run linter
         continue-on-error: true
-        run: npm run linter
+        run: yarn run linter
 
       - name: Set deployment environment
         id: set-environment
@@ -130,7 +130,7 @@ jobs:
         continue-on-error: true
         run: |
           echo "Starting deployment server for 30 seconds..."
-          timeout 30s npm run start || echo "Deployment server ran for 30 seconds and was terminated"
+          timeout 30s yarn run start || echo "Deployment server ran for 30 seconds and was terminated"
 
       - name: Generate deployment report
         run: |
