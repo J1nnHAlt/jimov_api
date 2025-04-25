@@ -9,10 +9,6 @@ on:
     branches:
       - main
       - develop
-  workflow_run:
-    workflows: ["Build"]
-    types:
-      - completed
 
 jobs:
   deploy:
@@ -31,32 +27,8 @@ jobs:
       - name: Install dependencies
         run: yarn install
 
-      # Download build artifacts - this is now required since we depend on build
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-output
-          path: .  # Download to the root of the workspace
-
-      # Verify build output exists
-      - name: Verify build output
-        run: |
-          if [ -d "build" ]; then
-            echo "Build directory exists"
-            ls -la build/
-            if [ -d "build/src" ]; then
-              echo "Source directory exists in build"
-              ls -la build/src/
-            else
-              echo "Warning: build/src directory missing"
-            fi
-          elif [ -d "dist" ]; then
-            echo "Dist directory exists"
-            ls -la dist/
-          else
-            echo "Error: Neither build nor dist directories found"
-            exit 1
-          fi
+      - name: Build Project
+        run: yarn build
 
       - name: Set deployment environment
         id: set-environment
@@ -75,39 +47,12 @@ jobs:
           echo "deploy_start=$(date +%s)" >> $GITHUB_ENV
           echo "Starting deployment to ${{ env.environment }} environment..."
 
-      # Find the main entry file for the application
-      - name: Find entry file
-        id: find-entry
-        run: |
-          if [ -f "build/src/index.js" ]; then
-            echo "entry_file=build/src/index.js" >> $GITHUB_ENV
-          elif [ -f "build/index.js" ]; then
-            echo "entry_file=build/index.js" >> $GITHUB_ENV
-          elif [ -f "dist/index.js" ]; then
-            echo "entry_file=dist/index.js" >> $GITHUB_ENV
-          else
-            # Search for any potential entry files
-            potential_entry=$(find build dist -name "index.js" -type f | head -1 || echo "")
-            if [ -n "$potential_entry" ]; then
-              echo "entry_file=$potential_entry" >> $GITHUB_ENV
-            else
-              echo "No entry file found"
-              echo "entry_file=not_found" >> $GITHUB_ENV
-            fi
-          fi
-          echo "Using entry file: ${{ env.entry_file }}"
-
       - name: Run deployment
         id: deploy
         continue-on-error: true
         run: |
-          if [ "${{ env.entry_file }}" != "not_found" ]; then
-            echo "Starting deployment server for 30 seconds..."
-            timeout 30s node ${{ env.entry_file }} || echo "Deployment server ran for 30 seconds and was terminated"
-          else
-            echo "Cannot start deployment server: No entry file found"
-            exit 1
-          fi
+          echo "Starting deployment server for 30 seconds..."
+          timeout 30s node ${{ env.entry_file }} || echo "Deployment server ran for 30 seconds and was terminated"
 
       - name: Generate deployment report
         run: |
