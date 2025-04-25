@@ -13,7 +13,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    needs: ["build"] 
 
     steps:
       - name: Set up git
@@ -27,11 +26,6 @@ jobs:
 
       - name: Install dependencies
         run: yarn install
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-output
 
       - name: Set deployment environment
         id: set-environment
