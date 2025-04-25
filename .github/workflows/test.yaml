@@ -1,0 +1,59 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up git
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Run tests with coverage report
+        id: test
+        continue-on-error: true
+        run: yarn test
+
+      - name: Record test status
+        run: |
+          if [ "${{ steps.test.outcome }}" == "failure" ]; then
+            echo "- Test status: Failed ❌" >> test-report.md
+          else
+            echo "- Test status: Passed ✅" >> test-report.md
+          fi
+
+      - name: Generate test coverage report
+        run: |
+          echo "## Test Coverage Report" > test-report.md
+          if [ -f "coverage/lcov-report/index.html" ]; then
+            cat coverage/lcov-report/index.html | grep -o '<span class="strong">[^<]*%' | head -3 >> test-report.md || echo "- Coverage data extraction failed" >> test-report.md
+          else
+            echo "- Coverage report not generated" >> test-report.md
+          fi
+          echo "- Tests executed at: $(date)" >> test-report.md
+
+      - name: Upload test coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-coverage
+          path: |
+            coverage/
+            test-report.md
