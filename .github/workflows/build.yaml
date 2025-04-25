@@ -75,7 +75,7 @@ jobs:
             echo "- File count: $(find build -type f | wc -l)" >> build-report.md
           fi
 
-      - name: Run formating
+      - name: Run formatting
         run: yarn format
 
       - name: Run linter
@@ -87,11 +87,3 @@ jobs:
         with:
           name: build-report
           path: build-report.md
-          
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-output
-          path: |
-            dist/
-            build/
