@@ -1,0 +1,89 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up git
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for proper stats
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Measure start time
+        id: build-start
+        run: echo "build_start=$(date +%s)" >> $GITHUB_ENV
+
+      - name: Build Project
+        run: yarn build
+
+      - name: Measure end time
+        run: |
+          build_end=$(date +%s)
+          build_duration=$((build_end - ${{ env.build_start }}))
+          echo "build_duration=$build_duration" >> $GITHUB_ENV
+
+      - name: Generate build report
+        run: |
+          echo "## Build Report" > build-report.md
+          echo "- Build timestamp: $(date)" >> build-report.md
+          echo "- Node version: $(node -v)" >> build-report.md
+          echo "- Yarn version: $(yarn -v)" >> build-report.md
+          echo "- Build status: Success" >> build-report.md
+          echo "- Build duration: ${{ env.build_duration }} seconds" >> build-report.md
+          echo "- OS: $(uname -a)" >> build-report.md
+          echo "- GitHub Workflow: ${{ github.workflow }}" >> build-report.md
+          echo "- Commit: ${{ github.sha }}" >> build-report.md
+          echo "- Branch: ${{ github.ref_name }}" >> build-report.md
+          
+          echo "## Package Information" >> build-report.md
+          if [ -f "package.json" ]; then
+            echo "- Package name: $(grep -m 1 '"name":' package.json | cut -d '"' -f 4)" >> build-report.md
+            echo "- Package version: $(grep -m 1 '"version":' package.json | cut -d '"' -f 4)" >> build-report.md
+          fi
+          
+          echo "## Repository Stats" >> build-report.md
+          echo "- Total files: $(find . -type f -not -path "*/node_modules/*" -not -path "*/\.*" | wc -l)" >> build-report.md
+          echo "- JS/TS files: $(find . -name "*.js" -o -name "*.ts" -not -path "*/node_modules/*" | wc -l)" >> build-report.md
+          
+          if [ -d "dist" ]; then
+            echo "## Build Output Analysis" >> build-report.md
+            echo "- Total build size: $(du -sh dist | cut -f1)" >> build-report.md
+            echo "- File count: $(find dist -type f | wc -l)" >> build-report.md
+          elif [ -d "build" ]; then
+            echo "## Build Output Analysis" >> build-report.md
+            echo "- Total build size: $(du -sh build | cut -f1)" >> build-report.md
+            echo "- File count: $(find build -type f | wc -l)" >> build-report.md
+          fi
+
+      - name: Run formatting
+        run: yarn format
+
+      - name: Run linter
+        continue-on-error: true
+        run: yarn linter
+
+      - name: Upload build report
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-report
+          path: build-report.md
